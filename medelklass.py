@@ -3,7 +3,7 @@
 # Medelklass.py - Bot questioning "Medelklass"
 #
 # Author: Erika "EAX" Lygdman - erika@eaxbreakparty.se - @eaxbreakparty
-# License: LGPL v3 (or anarchy)
+# License: LGPL v3 (or anarchy) kopimi also works - k bai. 
 #
 
 import tweepy, time
@@ -19,7 +19,7 @@ class MedelklassBot:
 	def debugger(self, text):
 		print text
 	
-	def content(self): # Needs more content!
+	def content(self): # <--- Needs more content!
 		status = [
 			"Hmm... Medelklass? Vad menar du?",
 			"Asså definera medelklass...",
@@ -30,7 +30,7 @@ class MedelklassBot:
 		]
 		return status[randint(0,len(status)-1)] 
 	
-	def getPrevID(self):
+	def getPrevID(self): # <--- id is a BAD varable name to use...
 		try:
 			f = open(self.statefile, 'r')
 			id = int(f.readline())
@@ -68,7 +68,6 @@ class MedelklassBot:
 				
 		except tweepy.TweepError:
 			if self.limitReached() == True:
-				print "getTweets got error"
 				pass
 		# Returns tweetList in reverse, tweet.id low to high
 		# Tweepy Cursor().items() is stupid and fetches tweets high to low.
@@ -78,16 +77,18 @@ class MedelklassBot:
 	def engine(self):
 		prevID = self.getPrevID()
 		tweets = self.getTweets()
-		idList = [] # <--- Problem with appending on increase
+		idList = []
 		try:
 			for tweet in tweets:
 				#STÄDA UPP DEN HÄR IF-SATSEN DIN JÄVEL
 				if tweet.retweeted == False and 'RT' not in tweet.text and 'medelklass' in tweet.text and tweet.id > prevID:
+					# This is where it'll call the tweet function but currently only
+					# prints to command line so it won't spam and can be tested.
 					print tweet.created_at, tweet.user.screen_name, tweet.id , '\n', tweet.text, '\n'
 					print self.content(), ' @%s\n' % tweet.user.screen_name
-					idList.append(tweet.id) # <--- Problem with appending on increase after first loop
+					idList.append(tweet.id)
 				else:
-					self.debugger('Didn\'nt receive a list of Tweets, continuing loop...')
+					self.debugger('Didn\'nt receive a newer list of Tweets, continuing loop...')
 					continue
 		except tweepy.TweepError:
 			self.limitReached()
@@ -109,3 +110,8 @@ if __name__ == '__main__':
 		main()
 	except KeyboardInterrupt: 
 		quit()
+
+# TODO
+# *Function to put users in blocklist for two weeks..
+# *Function to tweet in a "well manered fashion."
+# *Fix if-statement in engine() 
