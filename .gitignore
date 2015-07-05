@@ -1,3 +1,5 @@
-.ini
-.txt
-.pyc
+*.ini
+*.txt
+*.pyc
+apisettings.py
+statefile2.txt
