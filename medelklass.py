@@ -22,7 +22,7 @@ class MedelklassBot:
 	def content(self): # Needs more content!
 		status = [
 			"Hmm... Medelklass? Vad menar du?",
-			"Asså definera medelklass.",
+			"Asså definera medelklass...",
 			"Finns det en medelklass?",
 			"Medelklass är bara ett ord för att splittra arbetarklassen",
 			"Vafan menar du med \"Medelklass\"?",
