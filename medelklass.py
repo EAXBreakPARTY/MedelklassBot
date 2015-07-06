@@ -1,5 +1,5 @@
 #!/usr/bin/python2
-# -*- coding: iso-8859-15 -*-
+# -*- coding: utf-8 -*-
 # Medelklass.py - Bot questioning "Medelklass"
 #
 # Author: Erika "EAX" Lygdman - erika@eaxbreakparty.se - @eaxbreakparty
@@ -75,6 +75,7 @@ class MedelklassBot:
 		return tweetList
 
 	def engine(self):
+		# Rewrite the conditions for saving the new id, another loop structure maybe?
 		prevID = self.getPrevID()
 		tweets = self.getTweets()
 		idList = []
@@ -89,14 +90,15 @@ class MedelklassBot:
 					idList.append(tweet.id)
 				else:
 					self.debugger('Didn\'nt receive a newer list of Tweets, continuing loop...')
-					continue
+					pass
+			
 		except tweepy.TweepError:
 			self.limitReached()
 			pass
 		if len(idList)-1 > 0: # <--- problem with this if-statement?
 			self.saveID(idList[len(idList)-1])
 		else:
-			self.debugger('idList is empty, continuing loop...') # <--- Most common message after first loop
+			self.debugger('idList is empty, continuing loop...')
 			pass
 
 def main():
