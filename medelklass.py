@@ -1,23 +1,32 @@
 #!/usr/bin/python2
-# -*- coding: utf-8 -*-
+# -*- coding: latin-1 -*-
 # Medelklass.py - Bot questioning "Medelklass"
 #
-# Author: Erika "EAX" Lygdman - erika@eaxbreakparty.se - @eaxbreakparty
+# Author: Erika "eax" Lygdman - erika@eaxbreakparty.se - @eaxbreakparty
 # License: LGPL v3 (or anarchy) kopimi also works - k bai. 
 #
 
-import tweepy, time
+import inspect, tweepy, time, re
 
 from apisettings import *
 from random import randint
-
+from datetime import datetime
 
 class MedelklassBot:
 	twitter = TwitterAPI() # module contains api keys, api settings and main tweet function. twitter.tweet(msg)
 	statefile = 'statefile.txt'
+	blocklist = 'blocklist.txt'
 
+	
 	def debugger(self, text):
-		print text
+		print text, '-', inspect.stack()[1][3], '\b()'
+
+	
+	def limit_reached(self):
+		self.debugger('API call limit reached... sleeping...')
+		time.sleep(90)
+		return True
+	
 	
 	def content(self): # <--- Needs more content!
 		status = [
@@ -26,84 +35,71 @@ class MedelklassBot:
 			"Finns det en medelklass?",
 			"Medelklass är bara ett ord för att splittra arbetarklassen",
 			"Vafan menar du med \"Medelklass\"?",
-			"Medelklass? Du menar medelinkomsttagare?"
+			"Medelklass? Du menar medelinkomsttagare?",
+			"Trodde det va arbetarklass mot överklass, var kommer medelklassen in?"
 		]
 		return status[randint(0,len(status)-1)] 
-	
-	def getPrevID(self): # <--- id is a BAD varable name to use...
-		try:
-			f = open(self.statefile, 'r')
-			id = int(f.readline())
-			f.close()
-			return id
-		except IOError:
-			self.debugger('getPrevID Got IOError, Passing...')
-			pass
 
-	def saveID(self, state):
-		prevID = self.getPrevID()
-		try:
-			if state > prevID:
-				f = open(self.statefile, 'w')
-				f.write(str(state))
-				f.close()		
-			else:
-				self.debugger('New ID smaller than previous stored ID, passing...')
-		except IOError:
-			self.debugger('saveID got IOError, Passing...')
-			pass
+	##
+	## <--- Make blocklist function
+	##
 
-	def limitReached(self):
-		self.debugger('API call limit reached... sleeping...')
-		time.sleep(60 * 15)
-		return True
+	def match_query(self, tweet):
+		query = re.compile(r'([Mm]edelklass)\w*')
+		match = query.search(tweet)
+		if match and 'RT' not in tweet:
+			print '\n'
+			self.debugger('Query match <3')
+			return True	
+		else:
+			self.debugger('Query didn\'nt match')
+			return False
 
-	def getTweets(self):
-		sinceID = self.getPrevID()
-		tweetList = []
+
+	def get_tweets(self):
+		tweetlist = []
+		print 'Calling API'
 		try:
-			# API call to put tweets containing the word 'medelklass' and with greater value than last seen ID.
-			for tweet in tweepy.Cursor(self.twitter.api.search,q='medelklass', since_id=sinceID).items(): 
-				tweetList.append(tweet)
-				
+			# API call to put tweets containing the word 'medelklass'
+			for tweet in tweepy.Cursor(self.twitter.api.search,q='medelklass').items(): 
+				tweetlist.append(tweet)
 		except tweepy.TweepError:
-			if self.limitReached() == True:
-				pass
-		# Returns tweetList in reverse, tweet.id low to high
-		# Tweepy Cursor().items() is stupid and fetches tweets high to low.
-		tweetList.reverse()
-		return tweetList
+			self.limit_reached()
+			pass
+		tweetlist.reverse()
+		return tweetlist
+
+
 
 	def engine(self):
-		# Rewrite the conditions for saving the new id, another loop structure maybe?
-		prevID = self.getPrevID()
-		tweets = self.getTweets()
-		idList = []
+		tweets = self.get_tweets()
 		try:
 			for tweet in tweets:
-				#STÄDA UPP DEN HÄR IF-SATSEN DIN JÄVEL
-				if tweet.retweeted == False and 'RT' not in tweet.text and 'medelklass' in tweet.text and tweet.id > prevID:
+				if self.match_query(tweet.text) == True and 'RT' not in tweet.text and tweet.retweeted == False:
 					# This is where it'll call the tweet function but currently only
 					# prints to command line so it won't spam and can be tested.
-					print tweet.created_at, tweet.user.screen_name, tweet.id , '\n', tweet.text, '\n'
-					print self.content(), ' @%s\n' % tweet.user.screen_name
-					idList.append(tweet.id)
+					#send = self.content , '@%s' % tweet.user.screen_name
+					#twitter.tweet(send)
+					#print send
+		
+					
+					print '-' * 25
+					print tweet.created_at, tweet.user.screen_name, tweet.id, '\n', tweet.text.encode('utf-8'), '\n'
+					print self.content(), '@%s' % tweet.user.screen_name
+					print '-' * 25, '\n'
 				else:
-					self.debugger('Didn\'nt receive a newer list of Tweets, continuing loop...')
-					pass
-			
+					self.debugger('Didn\'nt receive a newer list of Tweets meeting conditions, continuing loop...')
+					time.sleep(15)
+					pass	
 		except tweepy.TweepError:
 			self.limitReached()
 			pass
-		if len(idList)-1 > 0: # <--- problem with this if-statement?
-			self.saveID(idList[len(idList)-1])
-		else:
-			self.debugger('idList is empty, continuing loop...')
-			pass
+
+#	def __init__(self, *args, **kwargs):
 
 def main():
 	medelklass = MedelklassBot()
-    
+ 
 	while True:
 		medelklass.engine()	
 
@@ -114,6 +110,8 @@ if __name__ == '__main__':
 		quit()
 
 # TODO
-# *Function to put users in blocklist for two weeks..
-# *Function to tweet in a "well manered fashion."
-# *Fix if-statement in engine() 
+# * Solve sys.excepthook is missind; lost sys.stderr
+# * Function to put users in blocklist for two weeks..
+# * Something to handle *args **kwargs
+# * Function to tweet in a "well manered fashion."
+# * Fix if-statement in engine() 
